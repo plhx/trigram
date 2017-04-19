@@ -32,7 +32,6 @@ var trigram = {
     encode: function(data) {
         var x = data.concat(0, 0, 0, 0);
         var r = '';
-        console.log(x);
         for(var i = 0, j = data.length; i < j; i += 3) {
             var a = x[i + 0], b = x[i + 1], c = x[i + 2];
             r += String.fromCharCode.apply(null, [
