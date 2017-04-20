@@ -30,10 +30,11 @@ policies, either expressed or implied, of the FreeBSD Project.
 */
 var trigram = {
     encode: function(data) {
-        var x = data.concat(0, 0, 0, 0);
+        var x = typeof(data) == 'string' ? trigram.__utf8encode(data) : data;
+        var y = x.concat(0, 0, 0, 0);
         var r = '';
-        for(var i = 0, j = data.length; i < j; i += 3) {
-            var a = x[i + 0], b = x[i + 1], c = x[i + 2];
+        for(var i = 0, j = x.length; i < j; i += 3) {
+            var a = y[i + 0], b = y[i + 1], c = y[i + 2];
             r += String.fromCharCode.apply(null, [
                 (a & 7),
                 (a >> 3) & 7,
@@ -47,13 +48,6 @@ var trigram = {
         }
         return r;
     },
-    encodeString: function(s) {
-        var r = [];
-        encodeURIComponent(s).replace(/%[0-9A-Fa-f]{2}|./g, function(m) {
-            r.push(m.length == 1 ? m.charCodeAt(0) : parseInt(m.substr(1), 16));
-        });
-        return trigram.encode(r);
-    },
     decode: function(data) {
         var x = Array.from(
             data + '\u2637\u2637\u2637\u2637\u2637\u2637\u2637\u2637'
@@ -64,12 +58,26 @@ var trigram = {
         };
         var r = '';
         for(var i = 0, j = x.length; i < j; i += 8) {
-            var a = x[i + 0] | (x[i + 1] << 3) | ((x[i + 2] & 3) << 6);
-            var b = (x[i + 2] >> 2) | (x[i + 3] << 1) |
-                (x[i + 4] << 4) | ((x[i + 5] & 1) << 7);
-            var c = (x[i + 5] >> 1) | (x[i + 6] << 2) | (x[i + 7] << 5);
-            r += decodeURIComponent('%' + h(a) + '%' + h(b) + '%' + h(c));
+            r += trigram.__utf8decode([
+                x[i + 0] | (x[i + 1] << 3) | ((x[i + 2] & 3) << 6),
+                (x[i + 2] >> 2) | (x[i + 3] << 1) |
+                (x[i + 4] << 4) | ((x[i + 5] & 1) << 7),
+                (x[i + 5] >> 1) | (x[i + 6] << 2) | (x[i + 7] << 5)
+            ]);
         }
         return r;
+    },
+    __utf8encode: function(s) {
+        var b = [];
+        encodeURIComponent(s).replace(/%[0-9A-Fa-f]{2}|./g, function(m) {
+            b.push(m.length == 1 ? m.charCodeAt(0) : parseInt(m.substr(1), 16));
+        });
+        return b;
+    },
+    __utf8decode: function(b) {
+        return decodeURIComponent(b.map(function(e) {
+            var x = e.toString(16);
+            return '%' + (x.length < 2 ? '0' + x : x);
+        }).join(''));
     }
 }
